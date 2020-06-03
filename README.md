@@ -1,2 +1,2 @@
 # poc-microservices-kafka
-Proof 
+Microservices with Apache Kafka (POC) 
