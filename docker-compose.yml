@@ -1,5 +1,10 @@
 version: '3'
 
+networks:
+  default:
+    external:
+      name: kafka-network
+
 services:
   admin:
     build: ./services/admin
@@ -10,13 +15,13 @@ services:
     build: ./services/producer
     environment:
       KAFKA_BROKER_URL: broker:9092
+    depends_on: 
+      - admin
 
   consumer:
     build: ./services/consumer
     environment:
       KAFKA_BROKER_URL: broker:9092
+    depends_on: 
+      - admin
 
-networks:
-  default:
-    external:
-      name: kafka-network
