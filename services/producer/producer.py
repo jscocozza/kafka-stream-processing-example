@@ -1,8 +1,9 @@
+import json
 import os
-from confluent_kafka import Producer
+import requests
+import time
 
-KAFKA_BROKER_URL = os.environ.get('KAFKA_BROKER_URL')
-producer = Producer({'bootstrap.servers': KAFKA_BROKER_URL})
+from confluent_kafka import Producer
 
 def delivery_report(err, msg):
     """ Called once for each message produced to indicate delivery result.
@@ -12,21 +13,28 @@ def delivery_report(err, msg):
     else:
         print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
-for data in ["hola", "como va?", "chau"]:
-    print("PRODUCING MESSAGES!")
-    
+
+KAFKA_BROKER_URL = os.environ.get('KAFKA_BROKER_URL')
+GLOBAL_COVID_19_URL = "https://thevirustracker.com/free-api?global=stats"
+
+producer = Producer({'bootstrap.servers': KAFKA_BROKER_URL})
+
+while True:
     # Trigger any available delivery report callbacks from previous produce() calls
     producer.poll(0)
 
-    # Asynchronously produce a message, the delivery report callback
-    # will be triggered from poll() above, or flush() below, when the message has
-    # been successfully delivered or failed permanently.
+    response = requests.get(url=GLOBAL_COVID_19_URL)
+    global_covid_data = json.loads(response.text)["results"][0]
+    
     producer.produce(
-      'event_messages_topic',
-      data.encode('utf-8'),
+      'global_covid_cases',
+      json.dumps(global_covid_data),
       callback=delivery_report
     )
 
-# Wait for any outstanding messages to be delivered and delivery report
-# callbacks to be triggered.
-producer.flush()
+    # Wait for any outstanding messages to be delivered and delivery report
+    # callbacks to be triggered.
+    producer.flush()
+
+    # Wait 5 seconds before sending another requests
+    time.sleep(5)
